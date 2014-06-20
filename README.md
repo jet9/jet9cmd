@@ -1,3 +1,2 @@
-==== jet9cmd - Simple CLI wrapper
-
-
+jet9cmd - Simple CLI wrapper
+============================
