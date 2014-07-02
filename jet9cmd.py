@@ -44,7 +44,8 @@ class Jet9Cmd(object):
         # get module
         if len(cmd) == 0:
             # Error: empty cmd list
-            raise Jet9CmdError("empty cmd list".format(word))
+            self
+            raise Jet9CmdError("empty cmd list")
 
         word = cmd.pop(0)
         d("word={0}".format(word))
@@ -62,7 +63,8 @@ class Jet9Cmd(object):
         # get command
         if len(cmd) == 0:
             # Error: empty cmd list
-            raise Jet9CmdError("empty cmd list")
+            self.print_module_help(out["module"])
+            raise Jet9CmdError("empty module cmd list")
 
         word = cmd.pop(0)
         d("word={0}".format(word))
@@ -153,11 +155,10 @@ class Jet9Cmd(object):
 
         cls_instance = self.mappings[_cmd["module"]]()
 
-        try:
-            exit_code = getattr(cls_instance, _cmd["command"])(_cmd["subcommand"], **_cmd["params"])
-
-        except AttributeError:
+        if _cmd["command"] not in dir(cls_instance):
             raise Jet9CmdError("Cmd process error: command `{0}' not implemented".format(_cmd["command"]))
+
+        exit_code = getattr(cls_instance, _cmd["command"])(_cmd["subcommand"], **_cmd["params"])
 
         if not isinstance(exit_code, int):
             exit_code = 0
@@ -184,12 +185,12 @@ class Jet9Cmd(object):
 
         return p
 
-    def _print_cmd_help(self, module, leaf, indent):
+    def _print_cmd_help(self, module, leaf, indent=0):
         """ Recusively print help for module """
 
         print " " * indent * 4 + module
 
-        for key in leaf.keys():
+        for key in sorted(leaf.keys()):
             (cmd, helpstr) = key.split(":")
             if isinstance(leaf[key], dict):
                 self._print_cmd_help(cmd, leaf[key], indent+1)
@@ -197,6 +198,16 @@ class Jet9Cmd(object):
                 j = [cmd]
                 joined_cmd = cmd + " " + " ".join([param.upper() for param in leaf[key]])
                 print " " * (indent+1)*4 + "{0:40s} {1:80s}".format(joined_cmd, helpstr)
+
+    def print_module_help(self, module):
+        """Print help for specific module"""
+
+        for key in self.pattern_helps.keys():
+            (mod, helpstr) = key.split(":")
+            if mod != module:
+                continue
+
+            self._print_cmd_help(mod, self.pattern_helps[key], 0)
 
     def print_help(self, module=None):
         """ Show help for module(s)"""
@@ -216,12 +227,7 @@ class Jet9Cmd(object):
 
         else:
             print "module:"
-            for key in self.pattern_helps.keys():
-                (mod, helpstr) = key.split(":")
-                if mod != module:
-                    continue
-
-                self._print_cmd_help(mod, self.pattern_helps[key], 0)
+            self.print_module_help(module)
 
 if __name__ == "__main__":
 
